@@ -19,12 +19,12 @@ const HealthRecommendations: React.FC<HealthRecommendationsProps> = ({ aqiData }
   });
 
   const getAQILevel = (aqi: number) => {
-    if (aqi === 1) return "Good";
-    if (aqi === 2) return "Fair";
-    if (aqi === 3) return "Moderate";
-    if (aqi === 4) return "Poor";
-    if (aqi === 5) return "Very Poor";
-    return "Unknown";
+    if (aqi <= 50) return "Good";
+    if (aqi <= 100) return "Moderate";
+    if (aqi <= 150) return "Unhealthy for Sensitive Groups";
+    if (aqi <= 200) return "Unhealthy";
+    if (aqi <= 300) return "Very Unhealthy";
+    return "Hazardous";
   };
 
   const getHealthRecommendations = (aqi: number) => {
@@ -35,62 +35,52 @@ const HealthRecommendations: React.FC<HealthRecommendationsProps> = ({ aqiData }
       vulnerable: []
     };
 
-    switch (aqi) {
-      case 1: // Good
-        recommendations.outdoor.push("Perfect for all outdoor activities including running, cycling, and sports");
-        recommendations.outdoor.push("Great time for walks in the park or outdoor exercise");
-        recommendations.indoor.push("Consider opening windows for fresh air circulation");
-        recommendations.protective.push("No special protective measures needed");
-        break;
-        
-      case 2: // Fair
-        recommendations.outdoor.push("Good for most outdoor activities with normal precautions");
-        recommendations.outdoor.push("Ideal for moderate exercise like walking or light jogging");
-        recommendations.indoor.push("Safe to open windows for ventilation");
-        recommendations.protective.push("Sensitive individuals should monitor symptoms");
-        break;
-        
-      case 3: // Moderate
-        recommendations.outdoor.push("Limit prolonged outdoor exertion, especially for sensitive groups");
-        recommendations.outdoor.push("Choose indoor activities during peak pollution hours");
-        recommendations.indoor.push("Keep windows closed during high traffic times");
-        recommendations.protective.push("Consider wearing a mask if you're sensitive to air pollution");
-        recommendations.vulnerable.push("Children and elderly should reduce outdoor time");
-        break;
-        
-      case 4: // Poor
-        recommendations.outdoor.push("Avoid outdoor exercise and limit time outside");
-        recommendations.outdoor.push("If you must go outside, limit to essential activities only");
-        recommendations.indoor.push("Keep windows and doors closed");
-        recommendations.indoor.push("Use air purifiers if available");
-        recommendations.protective.push("Wear N95 or equivalent masks when outside");
-        recommendations.vulnerable.push("Everyone should limit outdoor activities");
-        break;
-        
-      case 5: // Very Poor
-        recommendations.outdoor.push("Stay indoors as much as possible");
-        recommendations.outdoor.push("Avoid all outdoor physical activities");
-        recommendations.indoor.push("Seal gaps around doors and windows");
-        recommendations.indoor.push("Run air purifiers on high settings");
-        recommendations.protective.push("Wear high-quality masks (N95/N99) when outdoors");
-        recommendations.vulnerable.push("Seek medical attention if experiencing breathing difficulties");
-        break;
+    if (aqi <= 50) {
+      recommendations.outdoor.push("Perfect for all outdoor activities including running, cycling, and sports");
+      recommendations.outdoor.push("Great time for walks in the park or outdoor exercise");
+      recommendations.indoor.push("Consider opening windows for fresh air circulation");
+      recommendations.protective.push("No special protective measures needed");
+    } else if (aqi <= 100) {
+      recommendations.outdoor.push("Good for most outdoor activities with normal precautions");
+      recommendations.outdoor.push("Ideal for moderate exercise like walking or light jogging");
+      recommendations.indoor.push("Safe to open windows for ventilation");
+      recommendations.protective.push("Sensitive individuals should monitor symptoms");
+    } else if (aqi <= 150) {
+      recommendations.outdoor.push("Limit prolonged outdoor exertion, especially for sensitive groups");
+      recommendations.outdoor.push("Choose indoor activities during peak pollution hours");
+      recommendations.indoor.push("Keep windows closed during high traffic times");
+      recommendations.protective.push("Consider wearing a mask if you're sensitive to air pollution");
+      recommendations.vulnerable.push("Children and elderly should reduce outdoor time");
+    } else if (aqi <= 200) {
+      recommendations.outdoor.push("Avoid outdoor exercise and limit time outside");
+      recommendations.outdoor.push("If you must go outside, limit to essential activities only");
+      recommendations.indoor.push("Keep windows and doors closed");
+      recommendations.indoor.push("Use air purifiers if available");
+      recommendations.protective.push("Wear N95 or equivalent masks when outside");
+      recommendations.vulnerable.push("Everyone should limit outdoor activities");
+    } else {
+      recommendations.outdoor.push("Stay indoors as much as possible");
+      recommendations.outdoor.push("Avoid all outdoor physical activities");
+      recommendations.indoor.push("Seal gaps around doors and windows");
+      recommendations.indoor.push("Run air purifiers on high settings");
+      recommendations.protective.push("Wear high-quality masks (N95/N99) when outdoors");
+      recommendations.vulnerable.push("Seek medical attention if experiencing breathing difficulties");
     }
 
     return recommendations;
   };
 
   const getBestTimes = (aqi: number) => {
-    if (aqi <= 2) {
+    if (aqi <= 100) {
       return ["Early morning (6-8 AM)", "Late evening (7-9 PM)", "Most of the day is suitable"];
-    } else if (aqi === 3) {
+    } else if (aqi <= 150) {
       return ["Early morning before 8 AM", "After 8 PM when traffic decreases"];
     } else {
       return ["Best to stay indoors", "If essential, very early morning only"];
     }
   };
 
-  if (!aqiData) {
+  if (!aqiData || !aqiData.data) {
     return (
       <Card>
         <CardContent className="p-8 text-center">
@@ -100,7 +90,8 @@ const HealthRecommendations: React.FC<HealthRecommendationsProps> = ({ aqiData }
     );
   }
 
-  const aqi = aqiData.list[0].main.aqi;
+  // Use aqicn.org API structure: aqiData.data.aqi
+  const aqi = aqiData.data.aqi;
   const aqiLevel = getAQILevel(aqi);
   const recommendations = getHealthRecommendations(aqi);
   const bestTimes = getBestTimes(aqi);
@@ -108,13 +99,13 @@ const HealthRecommendations: React.FC<HealthRecommendationsProps> = ({ aqiData }
   return (
     <div className="space-y-6">
       {/* Current Air Quality Alert */}
-      <Alert className={`border-2 ${aqi >= 4 ? 'border-red-500 bg-red-50' : aqi >= 3 ? 'border-yellow-500 bg-yellow-50' : 'border-green-500 bg-green-50'}`}>
-        <AlertTriangle className={`h-4 w-4 ${aqi >= 4 ? 'text-red-500' : aqi >= 3 ? 'text-yellow-500' : 'text-green-500'}`} />
+      <Alert className={`border-2 ${aqi >= 200 ? 'border-red-500 bg-red-50' : aqi >= 150 ? 'border-yellow-500 bg-yellow-50' : 'border-green-500 bg-green-50'}`}>
+        <AlertTriangle className={`h-4 w-4 ${aqi >= 200 ? 'text-red-500' : aqi >= 150 ? 'text-yellow-500' : 'text-green-500'}`} />
         <AlertDescription className="text-lg font-medium">
           Current air quality is <strong>{aqiLevel}</strong> (AQI: {aqi})
-          {aqi >= 4 && " - Health Alert: Limit outdoor exposure"}
-          {aqi === 3 && " - Caution advised for sensitive individuals"}
-          {aqi <= 2 && " - Safe for outdoor activities"}
+          {aqi >= 200 && " - Health Alert: Limit outdoor exposure"}
+          {aqi >= 150 && aqi < 200 && " - Caution advised for sensitive individuals"}
+          {aqi < 150 && " - Safe for outdoor activities"}
         </AlertDescription>
       </Alert>
 
@@ -130,7 +121,7 @@ const HealthRecommendations: React.FC<HealthRecommendationsProps> = ({ aqiData }
           <div className="space-y-4">
             {recommendations.outdoor.map((rec, index) => (
               <div key={index} className="flex items-start space-x-3">
-                <div className={`w-2 h-2 rounded-full mt-2 ${aqi <= 2 ? 'bg-green-500' : aqi === 3 ? 'bg-yellow-500' : 'bg-red-500'}`}></div>
+                <div className={`w-2 h-2 rounded-full mt-2 ${aqi <= 100 ? 'bg-green-500' : aqi <= 150 ? 'bg-yellow-500' : 'bg-red-500'}`}></div>
                 <p className="text-gray-700">{rec}</p>
               </div>
             ))}
