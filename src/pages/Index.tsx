@@ -54,14 +54,52 @@ const Index = () => {
         `https://api.openweathermap.org/data/2.5/air_pollution?lat=${currentLocation.lat}&lon=${currentLocation.lon}&appid=${API_KEY}`
       );
       const data = await response.json();
-      setAqiData(data);
+      
+      if (data.cod && data.cod !== 200) {
+        console.error("AQI API Error:", data);
+        toast({
+          title: "API Error",
+          description: "Invalid API key or service unavailable. Using demo data.",
+          variant: "destructive"
+        });
+        // Set demo data for AQI
+        setAqiData({
+          list: [{
+            main: { aqi: 2 },
+            components: {
+              pm2_5: 15.2,
+              pm10: 25.8,
+              o3: 85.4,
+              no2: 22.1,
+              so2: 5.3,
+              co: 0.8
+            }
+          }]
+        });
+      } else {
+        setAqiData(data);
+      }
       console.log("AQI Data:", data);
     } catch (error) {
       console.error("Error fetching AQI data:", error);
       toast({
         title: "Data Error",
-        description: "Unable to fetch air quality data. Please try again.",
+        description: "Unable to fetch air quality data. Using demo data.",
         variant: "destructive"
+      });
+      // Set demo data for AQI
+      setAqiData({
+        list: [{
+          main: { aqi: 2 },
+          components: {
+            pm2_5: 15.2,
+            pm10: 25.8,
+            o3: 85.4,
+            no2: 22.1,
+            so2: 5.3,
+            co: 0.8
+          }
+        }]
       });
     } finally {
       setLoading(false);
@@ -74,10 +112,37 @@ const Index = () => {
         `https://api.openweathermap.org/data/2.5/weather?lat=${currentLocation.lat}&lon=${currentLocation.lon}&appid=${API_KEY}&units=metric`
       );
       const data = await response.json();
-      setWeatherData(data);
+      
+      if (data.cod && data.cod !== 200) {
+        console.error("Weather API Error:", data);
+        // Set demo weather data
+        setWeatherData({
+          main: {
+            temp: 22,
+            humidity: 65
+          },
+          wind: {
+            speed: 3.2
+          },
+          visibility: 8000
+        });
+      } else {
+        setWeatherData(data);
+      }
       console.log("Weather Data:", data);
     } catch (error) {
       console.error("Error fetching weather data:", error);
+      // Set demo weather data
+      setWeatherData({
+        main: {
+          temp: 22,
+          humidity: 65
+        },
+        wind: {
+          speed: 3.2
+        },
+        visibility: 8000
+      });
     }
   };
 
@@ -136,7 +201,7 @@ const Index = () => {
               <AQIDisplay aqiData={aqiData} location={currentLocation} loading={loading} />
               
               {/* Weather Stats */}
-              {weatherData && (
+              {weatherData && weatherData.main && (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <Card>
                     <CardContent className="p-4 text-center">
@@ -162,7 +227,7 @@ const Index = () => {
                   <Card>
                     <CardContent className="p-4 text-center">
                       <MapPin className="h-8 w-8 text-green-500 mx-auto mb-2" />
-                      <p className="text-2xl font-bold text-gray-900">{(weatherData.visibility/1000).toFixed(1)}</p>
+                      <p className="text-2xl font-bold text-gray-900">{weatherData.visibility ? (weatherData.visibility/1000).toFixed(1) : 'N/A'}</p>
                       <p className="text-sm text-gray-500">Visibility (km)</p>
                     </CardContent>
                   </Card>
