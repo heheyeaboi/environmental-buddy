@@ -11,21 +11,21 @@ interface AQIDisplayProps {
 
 const AQIDisplay: React.FC<AQIDisplayProps> = ({ aqiData, location, loading }) => {
   const getAQILevel = (aqi: number) => {
-    if (aqi === 1) return { level: "Good", color: "bg-green-500", textColor: "text-green-700", bgColor: "bg-green-50" };
-    if (aqi === 2) return { level: "Fair", color: "bg-yellow-500", textColor: "text-yellow-700", bgColor: "bg-yellow-50" };
-    if (aqi === 3) return { level: "Moderate", color: "bg-orange-500", textColor: "text-orange-700", bgColor: "bg-orange-50" };
-    if (aqi === 4) return { level: "Poor", color: "bg-red-500", textColor: "text-red-700", bgColor: "bg-red-50" };
-    if (aqi === 5) return { level: "Very Poor", color: "bg-purple-500", textColor: "text-purple-700", bgColor: "bg-purple-50" };
-    return { level: "Unknown", color: "bg-gray-500", textColor: "text-gray-700", bgColor: "bg-gray-50" };
+    if (aqi <= 50) return { level: "Good", color: "bg-green-500", textColor: "text-green-700", bgColor: "bg-green-50" };
+    if (aqi <= 100) return { level: "Moderate", color: "bg-yellow-500", textColor: "text-yellow-700", bgColor: "bg-yellow-50" };
+    if (aqi <= 150) return { level: "Unhealthy for Sensitive Groups", color: "bg-orange-500", textColor: "text-orange-700", bgColor: "bg-orange-50" };
+    if (aqi <= 200) return { level: "Unhealthy", color: "bg-red-500", textColor: "text-red-700", bgColor: "bg-red-50" };
+    if (aqi <= 300) return { level: "Very Unhealthy", color: "bg-purple-500", textColor: "text-purple-700", bgColor: "bg-purple-50" };
+    return { level: "Hazardous", color: "bg-red-900", textColor: "text-red-900", bgColor: "bg-red-100" };
   };
 
   const getAQIDescription = (aqi: number) => {
-    if (aqi === 1) return "Air quality is good. Ideal for outdoor activities.";
-    if (aqi === 2) return "Air quality is acceptable for most people.";
-    if (aqi === 3) return "Sensitive individuals should limit outdoor activities.";
-    if (aqi === 4) return "Everyone should limit outdoor activities.";
-    if (aqi === 5) return "Health warnings. Everyone should avoid outdoor activities.";
-    return "Air quality data unavailable.";
+    if (aqi <= 50) return "Air quality is good. Ideal for outdoor activities.";
+    if (aqi <= 100) return "Air quality is acceptable for most people.";
+    if (aqi <= 150) return "Sensitive individuals should limit outdoor activities.";
+    if (aqi <= 200) return "Everyone should limit outdoor activities.";
+    if (aqi <= 300) return "Health warnings. Everyone should avoid outdoor activities.";
+    return "Emergency conditions. Everyone should avoid all outdoor activities.";
   };
 
   if (loading) {
@@ -41,7 +41,7 @@ const AQIDisplay: React.FC<AQIDisplayProps> = ({ aqiData, location, loading }) =
     );
   }
 
-  if (!aqiData) {
+  if (!aqiData || !aqiData.data) {
     return (
       <Card className="w-full">
         <CardContent className="p-8 text-center">
@@ -54,8 +54,10 @@ const AQIDisplay: React.FC<AQIDisplayProps> = ({ aqiData, location, loading }) =
     );
   }
 
-  const aqi = aqiData.list[0].main.aqi;
+  const aqi = aqiData.data.aqi;
   const aqiInfo = getAQILevel(aqi);
+  const cityName = aqiData.data.city?.name || location.name;
+  const updateTime = aqiData.data.time?.s ? new Date(aqiData.data.time.s).toLocaleTimeString() : "Now";
 
   return (
     <Card className={`w-full ${aqiInfo.bgColor} border-2`}>
@@ -63,11 +65,11 @@ const AQIDisplay: React.FC<AQIDisplayProps> = ({ aqiData, location, loading }) =
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <MapPin className="h-5 w-5 text-gray-600" />
-            <span className="text-lg font-semibold text-gray-900">{location.name}</span>
+            <span className="text-lg font-semibold text-gray-900">{cityName}</span>
           </div>
           <div className="flex items-center space-x-2 text-sm text-gray-500">
             <Clock className="h-4 w-4" />
-            <span>Now</span>
+            <span>{updateTime}</span>
           </div>
         </CardTitle>
       </CardHeader>
@@ -89,33 +91,43 @@ const AQIDisplay: React.FC<AQIDisplayProps> = ({ aqiData, location, loading }) =
         
         {/* Additional AQI Info */}
         <div className="mt-6 pt-4 border-t border-gray-200">
-          <div className="grid grid-cols-5 gap-2 text-center">
+          <div className="grid grid-cols-6 gap-2 text-center text-xs">
             <div className="flex flex-col items-center">
               <div className="w-4 h-4 bg-green-500 rounded mb-1"></div>
-              <span className="text-xs text-gray-600">Good</span>
-              <span className="text-xs font-medium">1</span>
+              <span className="text-gray-600">Good</span>
+              <span className="font-medium">0-50</span>
             </div>
             <div className="flex flex-col items-center">
               <div className="w-4 h-4 bg-yellow-500 rounded mb-1"></div>
-              <span className="text-xs text-gray-600">Fair</span>
-              <span className="text-xs font-medium">2</span>
+              <span className="text-gray-600">Moderate</span>
+              <span className="font-medium">51-100</span>
             </div>
             <div className="flex flex-col items-center">
               <div className="w-4 h-4 bg-orange-500 rounded mb-1"></div>
-              <span className="text-xs text-gray-600">Moderate</span>
-              <span className="text-xs font-medium">3</span>
+              <span className="text-gray-600">Unhealthy</span>
+              <span className="font-medium">101-150</span>
             </div>
             <div className="flex flex-col items-center">
               <div className="w-4 h-4 bg-red-500 rounded mb-1"></div>
-              <span className="text-xs text-gray-600">Poor</span>
-              <span className="text-xs font-medium">4</span>
+              <span className="text-gray-600">Unhealthy</span>
+              <span className="font-medium">151-200</span>
             </div>
             <div className="flex flex-col items-center">
               <div className="w-4 h-4 bg-purple-500 rounded mb-1"></div>
-              <span className="text-xs text-gray-600">Very Poor</span>
-              <span className="text-xs font-medium">5</span>
+              <span className="text-gray-600">V.Unhealthy</span>
+              <span className="font-medium">201-300</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <div className="w-4 h-4 bg-red-900 rounded mb-1"></div>
+              <span className="text-gray-600">Hazardous</span>
+              <span className="font-medium">300+</span>
             </div>
           </div>
+        </div>
+
+        {/* Data Source Attribution */}
+        <div className="mt-4 text-xs text-gray-500 text-center">
+          Data provided by AQICN.org - World Air Quality Index Project
         </div>
       </CardContent>
     </Card>

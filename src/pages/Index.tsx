@@ -18,7 +18,8 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  const API_KEY = "ed3812cc51328f7ab94d15bceb7ae9cc61f93c15";
+  const AQI_API_KEY = "ed3812cc51328f7ab94d15bceb7ae9cc61f93c15";
+  const WEATHER_API_KEY = "ed3812cc51328f7ab94d15bceb7ae9cc61f93c15";
 
   useEffect(() => {
     // Request geolocation
@@ -50,36 +51,56 @@ const Index = () => {
   const fetchAirQualityData = async () => {
     try {
       setLoading(true);
+      // Using aqicn.org API for more accurate AQI data
       const response = await fetch(
-        `https://api.openweathermap.org/data/2.5/air_pollution?lat=${currentLocation.lat}&lon=${currentLocation.lon}&appid=${API_KEY}`
+        `https://api.waqi.info/feed/geo:${currentLocation.lat};${currentLocation.lon}/?token=${AQI_API_KEY}`
       );
       const data = await response.json();
       
-      if (data.cod && data.cod !== 200) {
+      console.log("AQI Data from aqicn.org:", data);
+      
+      if (data.status === "ok") {
+        // Transform aqicn.org data to match our component expectations
+        const transformedData = {
+          status: "ok",
+          data: {
+            aqi: data.data.aqi,
+            city: data.data.city,
+            time: data.data.time,
+            iaqi: data.data.iaqi || {},
+            attributions: data.data.attributions
+          }
+        };
+        setAqiData(transformedData);
+      } else {
         console.error("AQI API Error:", data);
         toast({
-          title: "API Error",
-          description: "Invalid API key or service unavailable. Using demo data.",
+          title: "AQI API Error",
+          description: "Unable to fetch real-time data. Using demo data.",
           variant: "destructive"
         });
-        // Set demo data for AQI
+        // Set demo data with aqicn.org format
         setAqiData({
-          list: [{
-            main: { aqi: 2 },
-            components: {
-              pm2_5: 15.2,
-              pm10: 25.8,
-              o3: 85.4,
-              no2: 22.1,
-              so2: 5.3,
-              co: 0.8
+          status: "ok",
+          data: {
+            aqi: 65,
+            city: {
+              name: currentLocation.name
+            },
+            time: {
+              s: new Date().toISOString()
+            },
+            iaqi: {
+              pm25: { v: 25.2 },
+              pm10: { v: 35.8 },
+              o3: { v: 45.4 },
+              no2: { v: 18.1 },
+              so2: { v: 8.3 },
+              co: { v: 0.6 }
             }
-          }]
+          }
         });
-      } else {
-        setAqiData(data);
       }
-      console.log("AQI Data:", data);
     } catch (error) {
       console.error("Error fetching AQI data:", error);
       toast({
@@ -87,19 +108,26 @@ const Index = () => {
         description: "Unable to fetch air quality data. Using demo data.",
         variant: "destructive"
       });
-      // Set demo data for AQI
+      // Set demo data with aqicn.org format
       setAqiData({
-        list: [{
-          main: { aqi: 2 },
-          components: {
-            pm2_5: 15.2,
-            pm10: 25.8,
-            o3: 85.4,
-            no2: 22.1,
-            so2: 5.3,
-            co: 0.8
+        status: "ok",
+        data: {
+          aqi: 65,
+          city: {
+            name: currentLocation.name
+          },
+          time: {
+            s: new Date().toISOString()
+          },
+          iaqi: {
+            pm25: { v: 25.2 },
+            pm10: { v: 35.8 },
+            o3: { v: 45.4 },
+            no2: { v: 18.1 },
+            so2: { v: 8.3 },
+            co: { v: 0.6 }
           }
-        }]
+        }
       });
     } finally {
       setLoading(false);
@@ -109,7 +137,7 @@ const Index = () => {
   const fetchWeatherData = async () => {
     try {
       const response = await fetch(
-        `https://api.openweathermap.org/data/2.5/weather?lat=${currentLocation.lat}&lon=${currentLocation.lon}&appid=${API_KEY}&units=metric`
+        `https://api.openweathermap.org/data/2.5/weather?lat=${currentLocation.lat}&lon=${currentLocation.lon}&appid=${WEATHER_API_KEY}&units=metric`
       );
       const data = await response.json();
       

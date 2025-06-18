@@ -18,20 +18,42 @@ const LocationSearch: React.FC<LocationSearchProps> = ({ currentLocation, onLoca
   const [showResults, setShowResults] = useState(false);
   const { toast } = useToast();
 
-  const API_KEY = "ed3812cc51328f7ab94d15bceb7ae9cc61f93c15";
+  const AQI_API_KEY = "ed3812cc51328f7ab94d15bceb7ae9cc61f93c15";
 
   const searchLocations = async (query: string) => {
-    if (query.length < 3) return;
+    if (query.length < 2) return;
     
     setIsSearching(true);
     try {
+      // First try to search by city name using aqicn.org search
       const response = await fetch(
-        `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(query)}&limit=5&appid=${API_KEY}`
+        `https://api.waqi.info/search/?token=${AQI_API_KEY}&keyword=${encodeURIComponent(query)}`
       );
       const data = await response.json();
-      setSearchResults(data);
-      setShowResults(true);
-      console.log("Search results:", data);
+      
+      if (data.status === "ok" && data.data) {
+        setSearchResults(data.data.slice(0, 5)); // Limit to 5 results
+        setShowResults(true);
+        console.log("Search results from aqicn.org:", data.data);
+      } else {
+        // Fallback to OpenWeatherMap geocoding if aqicn search fails
+        const fallbackResponse = await fetch(
+          `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(query)}&limit=5&appid=ed3812cc51328f7ab94d15bceb7ae9cc61f93c15`
+        );
+        const fallbackData = await fallbackResponse.json();
+        
+        // Transform OpenWeatherMap results to match our format
+        const transformedResults = fallbackData.map((item: any) => ({
+          station: {
+            name: `${item.name}, ${item.country}`,
+            geo: [item.lat, item.lon]
+          }
+        }));
+        
+        setSearchResults(transformedResults);
+        setShowResults(true);
+        console.log("Fallback search results:", transformedResults);
+      }
     } catch (error) {
       console.error("Error searching locations:", error);
       toast({
@@ -50,11 +72,24 @@ const LocationSearch: React.FC<LocationSearchProps> = ({ currentLocation, onLoca
   };
 
   const selectLocation = (location: any) => {
-    const newLocation = {
-      lat: location.lat,
-      lon: location.lon,
-      name: `${location.name}, ${location.country}`
-    };
+    let newLocation;
+    
+    if (location.station) {
+      // aqicn.org format
+      newLocation = {
+        lat: location.station.geo[0],
+        lon: location.station.geo[1],
+        name: location.station.name
+      };
+    } else {
+      // Fallback format or saved location
+      newLocation = {
+        lat: location.lat,
+        lon: location.lon,
+        name: location.name
+      };
+    }
+    
     onLocationChange(newLocation);
     setShowResults(false);
     setSearchQuery('');
@@ -68,7 +103,9 @@ const LocationSearch: React.FC<LocationSearchProps> = ({ currentLocation, onLoca
     { name: "New York, US", lat: 40.7128, lon: -74.0060 },
     { name: "London, UK", lat: 51.5074, lon: -0.1278 },
     { name: "Tokyo, JP", lat: 35.6762, lon: 139.6503 },
-    { name: "Sydney, AU", lat: -33.8688, lon: 151.2093 }
+    { name: "Sydney, AU", lat: -33.8688, lon: 151.2093 },
+    { name: "Beijing, CN", lat: 39.9042, lon: 116.4074 },
+    { name: "Delhi, IN", lat: 28.7041, lon: 77.1025 }
   ];
 
   return (
@@ -103,10 +140,12 @@ const LocationSearch: React.FC<LocationSearchProps> = ({ currentLocation, onLoca
                   >
                     <MapPin className="h-4 w-4 text-gray-500" />
                     <div>
-                      <p className="font-medium">{location.name}</p>
-                      <p className="text-sm text-gray-500">
-                        {location.state && `${location.state}, `}{location.country}
-                      </p>
+                      <p className="font-medium">{location.station?.name || location.name}</p>
+                      {location.station?.geo && (
+                        <p className="text-sm text-gray-500">
+                          Lat: {location.station.geo[0].toFixed(4)}, Lon: {location.station.geo[1].toFixed(4)}
+                        </p>
+                      )}
                     </div>
                   </button>
                 ))}
