@@ -9,8 +9,47 @@ const NewsSection = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [loading, setLoading] = useState(false);
+  const [news, setNews] = useState([]);
 
-  // Mock news data - in a real app, this would come from a news API
+  const NEWS_API_KEY = "7616dbfd53964d7e9a10488392e36a36";
+
+  useEffect(() => {
+    fetchNews();
+  }, []);
+
+  const fetchNews = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(
+        `https://newsapi.org/v2/everything?q=environment OR climate&sortBy=publishedAt&pageSize=20&apiKey=${NEWS_API_KEY}`
+      );
+      const data = await response.json();
+      
+      if (data.status === "ok" && data.articles) {
+        const transformedNews = data.articles.map((article, index) => ({
+          id: index + 1,
+          title: article.title,
+          summary: article.description || article.content?.substring(0, 200) + "...",
+          category: article.source?.name || "Environmental",
+          source: article.source?.name || "News Source",
+          publishDate: article.publishedAt,
+          url: article.url,
+          image: article.urlToImage || "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=400&h=200&fit=crop"
+        }));
+        setNews(transformedNews);
+      } else {
+        console.error("News API Error:", data);
+        setNews(mockNews);
+      }
+    } catch (error) {
+      console.error("Error fetching news:", error);
+      setNews(mockNews);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Mock news data - fallback
   const mockNews = [
     {
       id: 1,
@@ -83,7 +122,7 @@ const NewsSection = () => {
     "Health"
   ];
 
-  const filteredNews = mockNews.filter(article => {
+  const filteredNews = news.filter(article => {
     const matchesSearch = searchQuery === '' || 
       article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       article.summary.toLowerCase().includes(searchQuery.toLowerCase());
@@ -177,10 +216,15 @@ const NewsSection = () => {
                     
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-500">{article.source}</span>
-                      <button className="flex items-center text-blue-600 hover:text-blue-800 text-sm font-medium">
+                      <a 
+                        href={article.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center text-blue-600 hover:text-blue-800 text-sm font-medium"
+                      >
                         Read More
                         <ExternalLink className="h-4 w-4 ml-1" />
-                      </button>
+                      </a>
                     </div>
                   </div>
                 </div>

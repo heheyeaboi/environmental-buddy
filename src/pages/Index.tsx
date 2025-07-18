@@ -36,10 +36,20 @@ const Index = () => {
           console.log("Geolocation error:", error);
           toast({
             title: "Location Access",
-            description: "Using default location. Enable location services for personalized data.",
+            description: "Please allow location access for personalized data, or use the search to find your location.",
           });
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 5000,
+          maximumAge: 300000
         }
       );
+    } else {
+      toast({
+        title: "Location Not Available",
+        description: "Geolocation is not supported by this browser. Using default location.",
+      });
     }
   }, []);
 
@@ -137,11 +147,24 @@ const Index = () => {
   const fetchWeatherData = async () => {
     try {
       const response = await fetch(
-        `https://api.openweathermap.org/data/2.5/weather?lat=${currentLocation.lat}&lon=${currentLocation.lon}&appid=${WEATHER_API_KEY}&units=metric`
+        `https://api.open-meteo.com/v1/forecast?latitude=${currentLocation.lat}&longitude=${currentLocation.lon}&hourly=temperature_2m,wind_speed_10m,visibility,relative_humidity_2m&current_weather=true&timezone=auto`
       );
       const data = await response.json();
       
-      if (data.cod && data.cod !== 200) {
+      if (data.current_weather && data.hourly) {
+        // Transform Open-Meteo data to match our component expectations
+        const transformedData = {
+          main: {
+            temp: data.current_weather.temperature,
+            humidity: data.hourly.relative_humidity_2m ? data.hourly.relative_humidity_2m[0] : 65
+          },
+          wind: {
+            speed: data.current_weather.windspeed / 3.6 // Convert km/h to m/s
+          },
+          visibility: data.hourly.visibility ? data.hourly.visibility[0] : 10000
+        };
+        setWeatherData(transformedData);
+      } else {
         console.error("Weather API Error:", data);
         // Set demo weather data
         setWeatherData({
@@ -154,8 +177,6 @@ const Index = () => {
           },
           visibility: 8000
         });
-      } else {
-        setWeatherData(data);
       }
       console.log("Weather Data:", data);
     } catch (error) {
@@ -241,7 +262,7 @@ const Index = () => {
                   <Card>
                     <CardContent className="p-4 text-center">
                       <Wind className="h-8 w-8 text-blue-500 mx-auto mb-2" />
-                      <p className="text-2xl font-bold text-gray-900">{weatherData.wind?.speed || 0}</p>
+                      <p className="text-2xl font-bold text-gray-900">{weatherData.wind?.speed ? weatherData.wind.speed.toFixed(1) : '0.0'}</p>
                       <p className="text-sm text-gray-500">Wind (m/s)</p>
                     </CardContent>
                   </Card>
