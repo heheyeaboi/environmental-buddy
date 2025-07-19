@@ -3,15 +3,19 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Search, ExternalLink, Calendar, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Search, ExternalLink, Calendar, RefreshCw, Moon, Sun } from 'lucide-react';
+import { useTheme } from 'next-themes';
 
 const NewsSection = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [loading, setLoading] = useState(false);
   const [news, setNews] = useState([]);
+  const { theme, setTheme } = useTheme();
 
-  const NEWS_API_KEY = "7616dbfd53964d7e9a10488392e36a36";
+  const GNEWS_API_KEY = 'dbd9cc0169cdb26e3f90ac199603e940';
+  const BASE_URL = 'https://gnews.io/api/v4/search';
 
   useEffect(() => {
     fetchNews();
@@ -21,39 +25,32 @@ const NewsSection = () => {
     try {
       setLoading(true);
       const today = new Date().toISOString().split("T")[0];
-      const url = `https://newsapi.org/v2/everything?q=environment+OR+climate&from=${today}&sortBy=publishedAt&language=en&apiKey=${NEWS_API_KEY}`;
+
+      const url = `${BASE_URL}?q=environment&lang=en&country=in&max=10&apikey=${GNEWS_API_KEY}`;
 
       const response = await fetch(url);
       const data = await response.json();
-      
-      console.log("News API Response:", data);
-      
-      if (data.status === "ok" && data.articles) {
-        const validArticles = data.articles.filter(article => 
-          article.title && 
-          article.title !== "[Removed]" && 
-          article.description && 
-          article.description !== "[Removed]" &&
-          article.url
-        );
-        
-        const transformedNews = validArticles.slice(0, 15).map((article, index) => ({
+
+      console.log("GNews API Response:", data);
+
+      if (data.articles && data.articles.length > 0) {
+        const transformedNews = data.articles.map((article, index) => ({
           id: index + 1,
           title: article.title,
-          summary: article.description || (article.content ? article.content.substring(0, 200) + "..." : "Read more about this environmental story."),
-          category: determineCategory(article.title + " " + (article.description || "")),
-          source: article.source?.name || "News Source",
+          summary: article.description,
+          category: determineCategory(article.title + " " + article.description),
+          source: article.source.name,
           publishDate: article.publishedAt,
           url: article.url,
-          image: article.urlToImage || "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=400&h=200&fit=crop"
+          image: article.image || "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05",
         }));
         setNews(transformedNews);
       } else {
-        console.error("No valid articles found");
+        console.warn("No news found");
         setNews([]);
       }
     } catch (error) {
-      console.error("Error fetching news:", error);
+      console.error("Error fetching GNews:", error);
       setNews([]);
     } finally {
       setLoading(false);
@@ -104,7 +101,18 @@ const NewsSection = () => {
       {/* Search and Filter Section */}
       <Card>
         <CardHeader>
-          <CardTitle>Environmental News</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>Environmental News</CardTitle>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            >
+              <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+              <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+              <span className="sr-only">Toggle theme</span>
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="relative">
