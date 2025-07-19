@@ -20,17 +20,28 @@ const NewsSection = () => {
   const fetchNews = async () => {
     try {
       setLoading(true);
+      const today = new Date();
+      const fromDate = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000); // 30 days ago
       const response = await fetch(
-        `https://newsapi.org/v2/everything?q=environment OR climate&sortBy=publishedAt&pageSize=20&apiKey=${NEWS_API_KEY}`
+        `https://newsapi.org/v2/everything?q=(environment OR climate) AND (change OR warming OR pollution OR sustainability)&from=${fromDate.toISOString().split('T')[0]}&sortBy=publishedAt&pageSize=20&apiKey=${NEWS_API_KEY}`
       );
       const data = await response.json();
       
+      console.log("News API Response:", data);
+      
       if (data.status === "ok" && data.articles) {
-        const transformedNews = data.articles.map((article, index) => ({
+        const validArticles = data.articles.filter(article => 
+          article.title && 
+          article.title !== "[Removed]" && 
+          article.description && 
+          article.description !== "[Removed]"
+        );
+        
+        const transformedNews = validArticles.map((article, index) => ({
           id: index + 1,
           title: article.title,
-          summary: article.description || article.content?.substring(0, 200) + "...",
-          category: article.source?.name || "Environmental",
+          summary: article.description || (article.content ? article.content.substring(0, 200) + "..." : "Read more about this environmental story."),
+          category: determineCategory(article.title + " " + (article.description || "")),
           source: article.source?.name || "News Source",
           publishDate: article.publishedAt,
           url: article.url,
@@ -47,6 +58,15 @@ const NewsSection = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const determineCategory = (text: string) => {
+    const lowerText = text.toLowerCase();
+    if (lowerText.includes('climate') || lowerText.includes('warming')) return 'Climate Change';
+    if (lowerText.includes('pollution') || lowerText.includes('air quality')) return 'Air Quality';
+    if (lowerText.includes('policy') || lowerText.includes('government')) return 'Environmental Policy';
+    if (lowerText.includes('health') || lowerText.includes('medical')) return 'Health';
+    return 'Environmental';
   };
 
   // Mock news data - fallback
