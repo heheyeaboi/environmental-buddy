@@ -22,22 +22,60 @@ const NewsSection = () => {
       setLoading(true);
       const today = new Date();
       const fromDate = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000); // 30 days ago
-      const response = await fetch(
-        `https://newsapi.org/v2/everything?q=(environment OR climate) AND (change OR warming OR pollution OR sustainability)&from=${fromDate.toISOString().split('T')[0]}&sortBy=publishedAt&pageSize=20&apiKey=${NEWS_API_KEY}`
+      const fromDateStr = fromDate.toISOString().split('T')[0];
+      
+      // Fetch India-specific climate/environment news
+      const indiaResponse = await fetch(
+        `https://newsapi.org/v2/everything?q=(environment OR climate) AND India&from=${fromDateStr}&sortBy=publishedAt&language=en&pageSize=12&apiKey=${NEWS_API_KEY}`
       );
-      const data = await response.json();
+      const indiaData = await indiaResponse.json();
       
-      console.log("News API Response:", data);
+      // Fetch international climate/environment news
+      const internationalResponse = await fetch(
+        `https://newsapi.org/v2/everything?q=environment OR climate&from=${fromDateStr}&sortBy=publishedAt&language=en&pageSize=5&apiKey=${NEWS_API_KEY}`
+      );
+      const internationalData = await internationalResponse.json();
       
-      if (data.status === "ok" && data.articles) {
-        const validArticles = data.articles.filter(article => 
-          article.title && 
-          article.title !== "[Removed]" && 
-          article.description && 
-          article.description !== "[Removed]"
-        );
+      console.log("India News API Response:", indiaData);
+      console.log("International News API Response:", internationalData);
+      
+      let allArticles = [];
+      
+      // Process India articles
+      if (indiaData.status === "ok" && indiaData.articles) {
+        const validIndiaArticles = indiaData.articles
+          .filter(article => 
+            article.title && 
+            article.title !== "[Removed]" && 
+            article.description && 
+            article.description !== "[Removed]" &&
+            article.url
+          )
+          .slice(0, 12);
+        allArticles = [...allArticles, ...validIndiaArticles];
+      }
+      
+      // Process International articles  
+      if (internationalData.status === "ok" && internationalData.articles) {
+        const validInternationalArticles = internationalData.articles
+          .filter(article => 
+            article.title && 
+            article.title !== "[Removed]" && 
+            article.description && 
+            article.description !== "[Removed]" &&
+            article.url &&
+            !article.title.toLowerCase().includes('india') // Avoid duplicates
+          )
+          .slice(0, 3);
+        allArticles = [...allArticles, ...validInternationalArticles];
+      }
+      
+      if (allArticles.length > 0) {
+        // Sort by publication date (newest first) and limit to 15
+        allArticles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+        const limitedArticles = allArticles.slice(0, 15);
         
-        const transformedNews = validArticles.map((article, index) => ({
+        const transformedNews = limitedArticles.map((article, index) => ({
           id: index + 1,
           title: article.title,
           summary: article.description || (article.content ? article.content.substring(0, 200) + "..." : "Read more about this environmental story."),
@@ -49,7 +87,7 @@ const NewsSection = () => {
         }));
         setNews(transformedNews);
       } else {
-        console.error("News API Error:", data);
+        console.error("No valid articles found");
         setNews(mockNews);
       }
     } catch (error) {
