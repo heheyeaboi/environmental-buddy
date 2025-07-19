@@ -88,11 +88,11 @@ const NewsSection = () => {
         setNews(transformedNews);
       } else {
         console.error("No valid articles found");
-        setNews(mockNews);
+        setNews([]);
       }
     } catch (error) {
       console.error("Error fetching news:", error);
-      setNews(mockNews);
+      setNews([]);
     } finally {
       setLoading(false);
     }
@@ -107,69 +107,8 @@ const NewsSection = () => {
     return 'Environmental';
   };
 
-  // Mock news data - fallback
-  const mockNews = [
-    {
-      id: 1,
-      title: "New Air Quality Standards Announced by EPA",
-      summary: "The Environmental Protection Agency has released updated air quality standards focusing on PM2.5 and ozone levels to better protect public health.",
-      category: "Environmental Policy",
-      source: "EPA News",
-      publishDate: "2024-01-15",
-      url: "#",
-      image: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=400&h=200&fit=crop"
-    },
-    {
-      id: 2,
-      title: "Wildfire Season Brings Dangerous Air Quality to Western States",
-      summary: "Multiple states are experiencing hazardous air quality levels due to ongoing wildfires, with health officials urging residents to stay indoors.",
-      category: "Air Quality",
-      source: "Climate News",
-      publishDate: "2024-01-14",
-      url: "#",
-      image: "https://images.unsplash.com/photo-1500673922987-e212871fec22?w=400&h=200&fit=crop"
-    },
-    {
-      id: 3,
-      title: "Cities Leading the Fight Against Urban Air Pollution",
-      summary: "Major metropolitan areas are implementing innovative solutions to reduce air pollution, including electric vehicle incentives and green building standards.",
-      category: "Pollution",
-      source: "Urban Today",
-      publishDate: "2024-01-13",
-      url: "#",
-      image: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=400&h=200&fit=crop"
-    },
-    {
-      id: 4,
-      title: "Climate Change and Air Quality: The Hidden Connection",
-      summary: "New research reveals how climate change is affecting air quality patterns globally, with implications for public health policies.",
-      category: "Climate Change",
-      source: "Science Today",
-      publishDate: "2024-01-12",
-      url: "#",
-      image: "https://images.unsplash.com/photo-1501854140801-50d01698950b?w=400&h=200&fit=crop"
-    },
-    {
-      id: 5,
-      title: "Indoor Air Quality: What You Need to Know",
-      summary: "Experts share tips on improving indoor air quality, especially important during times of poor outdoor air conditions.",
-      category: "Health",
-      source: "Health Focus",
-      publishDate: "2024-01-11",
-      url: "#",
-      image: "https://images.unsplash.com/photo-1518495973542-4542c06a5843?w=400&h=200&fit=crop"
-    },
-    {
-      id: 6,
-      title: "Electric Vehicles Show Promise in Reducing Urban Pollution",
-      summary: "A comprehensive study shows significant air quality improvements in cities with high electric vehicle adoption rates.",
-      category: "Environmental Policy",
-      source: "Green Tech",
-      publishDate: "2024-01-10",
-      url: "#",
-      image: "https://images.unsplash.com/photo-1615729947596-a598e5de0ab3?w=400&h=200&fit=crop"
-    }
-  ];
+  // Mock news data - fallback (removed as per user request)
+  const mockNews = [];
 
   const categories = [
     "all",
